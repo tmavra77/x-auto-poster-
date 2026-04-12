@@ -108,6 +108,11 @@ def post_to_buffer(caption, image_url, channel_id, api_key):
             "mode": "shareNow",
             "assets": {
                 "images": [{"url": image_url}]
+            },
+            "metadata": {
+                "instagram": {
+                    "type": "post"
+                }
             }
         }
     }
