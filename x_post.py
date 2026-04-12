@@ -174,8 +174,20 @@ def process_posts():
             print(f"  FAILED: {error_msg}")
 
     if changed:
-        write_schedule(rows)
-        print("\nSchedule updated.")
+        # Remove posted/failed images and their CSV rows
+        kept_rows = []
+        for row in rows:
+            status = row.get("status", "")
+            if status in ("posted", "failed"):
+                image_path = IMAGES_DIR / row.get("image", "").strip()
+                if image_path.exists():
+                    image_path.unlink()
+                    print(f"  Cleaned up: {image_path.name}")
+            else:
+                kept_rows.append(row)
+
+        write_schedule(kept_rows)
+        print(f"\nSchedule updated. {len(rows) - len(kept_rows)} completed entries removed.")
 
     return changed
 
