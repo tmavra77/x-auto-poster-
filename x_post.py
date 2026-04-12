@@ -15,6 +15,9 @@ import tweepy
 REPO_DIR = Path(__file__).resolve().parent
 IMAGES_DIR = REPO_DIR / "images"
 SCHEDULE_CSV = REPO_DIR / "schedule.csv"
+HISTORY_CSV = REPO_DIR / "history.csv"
+
+HISTORY_FIELDNAMES = ["image", "caption", "scheduled_at", "status", "tweet_id", "posted_at"]
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 GREECE_TZ = timezone(timedelta(hours=3))  # EEST (UTC+3)
@@ -49,7 +52,7 @@ def read_schedule():
 def write_schedule(rows):
     fieldnames = ["image", "caption", "scheduled_at", "status", "tweet_id"]
     with open(SCHEDULE_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
         writer.writeheader()
         writer.writerows(rows)
 
@@ -174,20 +177,40 @@ def process_posts():
             print(f"  FAILED: {error_msg}")
 
     if changed:
-        # Remove posted/failed images and their CSV rows
+        now_greece = datetime.now(GREECE_TZ).strftime("%Y-%m-%d %H:%M")
+        posted_rows = []
         kept_rows = []
+
         for row in rows:
             status = row.get("status", "")
-            if status in ("posted", "failed"):
+            if status == "posted":
+                # Move to history and delete image
+                posted_rows.append(row)
                 image_path = IMAGES_DIR / row.get("image", "").strip()
                 if image_path.exists():
                     image_path.unlink()
-                    print(f"  Cleaned up: {image_path.name}")
+                    print(f"  Cleaned up image: {image_path.name}")
             else:
+                # Keep pending and failed rows (failed stays for visibility + retry)
                 kept_rows.append(row)
 
+        # Append posted rows to history.csv
+        if posted_rows:
+            history_exists = HISTORY_CSV.exists()
+            with open(HISTORY_CSV, "a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(
+                    f, fieldnames=HISTORY_FIELDNAMES,
+                    quoting=csv.QUOTE_ALL, extrasaction="ignore")
+                if not history_exists:
+                    writer.writeheader()
+                for row in posted_rows:
+                    row["posted_at"] = now_greece
+                    writer.writerow(row)
+            print(f"  Added {len(posted_rows)} row(s) to history.csv")
+
         write_schedule(kept_rows)
-        print(f"\nSchedule updated. {len(rows) - len(kept_rows)} completed entries removed.")
+        print(f"\nSchedule updated. {len(posted_rows)} posted, "
+              f"{sum(1 for r in kept_rows if r.get('status') == 'failed')} failed (kept for retry).")
 
     return changed
 
