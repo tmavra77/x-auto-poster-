@@ -111,7 +111,8 @@ def post_to_buffer(caption, image_url, channel_id, api_key):
             },
             "metadata": {
                 "instagram": {
-                    "type": "post"
+                    "type": "post",
+                    "shouldShareToFeed": True
                 }
             }
         }
