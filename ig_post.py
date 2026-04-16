@@ -136,7 +136,12 @@ def post_to_buffer(caption, image_url, channel_id, api_key):
 
     post_data = result.get("post")
     if post_data:
-        return True, post_data.get("id", "unknown")
+        post_id = post_data.get("id", "unknown")
+        post_status = post_data.get("status", "unknown")
+        print(f"  Buffer post status: {post_status}")
+        if post_status in ("failed", "error"):
+            return False, f"Buffer accepted post but status={post_status} (id={post_id})"
+        return True, post_id
 
     error_msg = result.get("message", "Unknown error from Buffer")
     return False, error_msg
