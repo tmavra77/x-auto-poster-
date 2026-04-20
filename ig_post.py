@@ -7,6 +7,7 @@ Posts any row from ig_schedule.csv whose Greece time has arrived.
 import csv
 import os
 import sys
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -147,6 +148,43 @@ def post_to_buffer(caption, image_url, channel_id, api_key):
     return False, error_msg
 
 
+def verify_buffer_post(post_id, api_key, retries=3, delay=20):
+    """Poll Buffer for the post status after sending. Returns (ok, status_str)."""
+    query = """
+    query GetPost($id: String!) {
+      post(id: $id) {
+        id
+        status
+      }
+    }
+    """
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    for attempt in range(retries):
+        time.sleep(delay)
+        try:
+            response = requests.post(
+                GRAPHQL_URL,
+                json={"query": query, "variables": {"id": post_id}},
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+            post = data.get("data", {}).get("post") or {}
+            status = post.get("status", "unknown")
+            print(f"  Buffer verify (attempt {attempt+1}): status={status}")
+            if status == "sent":
+                return True, status
+            if status in ("failed", "error", "unknown") and attempt == retries - 1:
+                return False, status
+        except Exception as e:
+            print(f"  Buffer verify error: {e}")
+    return True, "unverified"
+
+
 def process_posts():
     config = load_config()
     rows = read_schedule()
@@ -205,10 +243,17 @@ def process_posts():
             )
 
             if ok:
-                rows[idx]["status"] = "posted"
-                rows[idx]["buffer_post_id"] = result
-                changed = True
-                print(f"  Posted! Buffer post ID: {result}")
+                verified, vstatus = verify_buffer_post(result, config["BUFFER_API_KEY"])
+                if not verified:
+                    rows[idx]["status"] = "failed"
+                    rows[idx]["buffer_post_id"] = f"Buffer accepted but status={vstatus} (id={result})"
+                    changed = True
+                    print(f"  FAILED verification: Buffer status={vstatus}")
+                else:
+                    rows[idx]["status"] = "posted"
+                    rows[idx]["buffer_post_id"] = result
+                    changed = True
+                    print(f"  Posted! Buffer post ID: {result} (verified: {vstatus})")
             else:
                 rows[idx]["status"] = "failed"
                 rows[idx]["buffer_post_id"] = result[:200]
