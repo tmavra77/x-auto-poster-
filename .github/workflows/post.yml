@@ -5,6 +5,10 @@ on:
     - cron: '*/15 * * * *'  # Every 15 minutes
   workflow_dispatch: {}       # Manual trigger from GitHub UI
 
+concurrency:
+  group: post-to-x
+  cancel-in-progress: false  # Queue, don't cancel — let each run finish cleanly
+
 jobs:
   post:
     runs-on: ubuntu-latest

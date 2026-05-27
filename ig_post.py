@@ -25,7 +25,7 @@ GREECE_TZ = timezone(timedelta(hours=3))
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 MAX_CAPTION_LENGTH = 2200
 
-GRAPHQL_URL = "https://api.buffer.com"
+GRAPHQL_URL = "https://api.buffer.com/graphql"
 REPO_RAW_BASE = "https://raw.githubusercontent.com/tmavra77/x-auto-poster-/main/ig-images"
 
 
