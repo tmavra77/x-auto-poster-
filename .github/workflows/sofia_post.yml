@@ -1,0 +1,42 @@
+name: Post to X (Sofia)
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch: {}       # Manual trigger from GitHub UI
+
+concurrency:
+  group: post-to-sofia-x
+  cancel-in-progress: false  # Queue, don't cancel — let each run finish cleanly
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install tweepy
+
+      - name: Run poster
+        id: poster
+        env:
+          SOFIA_X_API_KEY: ${{ secrets.SOFIA_X_API_KEY }}
+          SOFIA_X_API_SECRET: ${{ secrets.SOFIA_X_API_SECRET }}
+          SOFIA_X_ACCESS_TOKEN: ${{ secrets.SOFIA_X_ACCESS_TOKEN }}
+          SOFIA_X_ACCESS_TOKEN_SECRET: ${{ secrets.SOFIA_X_ACCESS_TOKEN_SECRET }}
+        run: python sofia_post.py
+
+      - name: Commit updated schedule
+        if: steps.poster.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Clean up posted Sofia entries"
+          git push
