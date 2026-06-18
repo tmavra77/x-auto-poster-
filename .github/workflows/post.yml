@@ -2,7 +2,7 @@ name: Post to X
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
+    - cron: '0,15,30,45 * * * *'  # Every 15 min, at :00 (staggered from IG/Sofia)
   workflow_dispatch: {}       # Manual trigger from GitHub UI
 
 concurrency:
@@ -39,4 +39,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Clean up posted entries"
-          git push
+          for attempt in 1 2 3; do
+            git push && break
+            echo "Push failed (attempt $attempt), rebasing and retrying..."
+            git pull --rebase origin main
+          done
