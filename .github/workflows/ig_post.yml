@@ -1,8 +1,11 @@
 name: Post to Instagram
 
 on:
-  schedule:
-    - cron: '5,20,35,50 * * * *'  # Every 15 min, at :05 (staggered from Elena/Sofia X)
+  # PAUSED 2026-07-31 — Elena's Instagram account was suspended. Automatic posting
+  # disabled to stop repeated "failed to post" notifications. Re-enable by
+  # uncommenting the schedule block below once the account is restored.
+  # schedule:
+  #   - cron: '5,20,35,50 * * * *'  # Every 15 min, at :05 (staggered from Elena/Sofia X)
   workflow_dispatch: {}       # Manual trigger from GitHub UI
 
 concurrency:
