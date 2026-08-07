@@ -5,7 +5,16 @@ on:
   # disabled to stop repeated "failed to post" notifications.
   # schedule:
   #   - cron: '5,20,35,50 * * * *'  # Every 15 min, at :05 (staggered from Elena/Sofia X)
-  workflow_dispatch: {}       # Manual trigger from GitHub UI
+  #
+  # `workflow_dispatch` deliberately REMOVED 2026-08-07. An unidentified external
+  # automation has been dispatching this workflow every 15 minutes since
+  # 2026-04-13 and we cannot find what it is. With no dispatch trigger, its API
+  # calls now fail with HTTP 422 ("Workflow does not have workflow_dispatch
+  # trigger"), which should make the service report an error and reveal itself.
+  #
+  # `workflow_call` below is a placeholder: a workflow needs at least one valid
+  # trigger, and nothing calls this one, so it never fires on its own.
+  workflow_call: {}
 
 concurrency:
   group: post-to-instagram
@@ -21,6 +30,7 @@ jobs:
     # TO RE-ENABLE INSTAGRAM POSTING (once the account is restored):
     #   1. delete the `if: false` line below
     #   2. uncomment the `schedule:` block above
+    #   3. replace `workflow_call: {}` with `workflow_dispatch: {}` above
     if: false
     runs-on: ubuntu-latest
     permissions:
