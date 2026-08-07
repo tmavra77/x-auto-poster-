@@ -2,7 +2,13 @@ name: Post to X
 
 on:
   schedule:
-    - cron: '0,15,30,45 * * * *'  # Every 15 min, at :00 (staggered from IG/Sofia)
+    # Offset to :03 as of 2026-08-07. An external automation dispatches this same
+    # workflow on the exact quarter hour (:00/:15/:30/:45); when the cron fired at
+    # the same moment the two runs collided in the `post-to-x` concurrency group
+    # and GitHub cancelled the queued one, which is what produced the "run
+    # cancelled/failed" notification emails. A run takes ~25s, so a 3-minute
+    # offset keeps the cron and the external dispatch from ever overlapping.
+    - cron: '3,18,33,48 * * * *'  # Every 15 min, at :03 (staggered from IG/Sofia)
   workflow_dispatch: {}       # Manual trigger from GitHub UI
 
 concurrency:

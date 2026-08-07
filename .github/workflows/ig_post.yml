@@ -2,8 +2,7 @@ name: Post to Instagram
 
 on:
   # PAUSED 2026-07-31 — Elena's Instagram account was suspended. Automatic posting
-  # disabled to stop repeated "failed to post" notifications. Re-enable by
-  # uncommenting the schedule block below once the account is restored.
+  # disabled to stop repeated "failed to post" notifications.
   # schedule:
   #   - cron: '5,20,35,50 * * * *'  # Every 15 min, at :05 (staggered from Elena/Sofia X)
   workflow_dispatch: {}       # Manual trigger from GitHub UI
@@ -14,6 +13,15 @@ concurrency:
 
 jobs:
   post:
+    # HARD PAUSE 2026-08-07 — commenting out the cron above was NOT enough: an
+    # external automation still fires this workflow via workflow_dispatch every
+    # 15 minutes, so Buffer kept being called and every attempt failed (the IG
+    # account is suspended). This guard stops the job before any runner starts.
+    #
+    # TO RE-ENABLE INSTAGRAM POSTING (once the account is restored):
+    #   1. delete the `if: false` line below
+    #   2. uncomment the `schedule:` block above
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
